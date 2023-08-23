@@ -41,8 +41,8 @@ def findIfSameMetaGedNameWithSamePostId(connection, postId, metaname):
     result = cursor.fetchone()
     return result[0] if result is not None else None
 
-def createPostContactSynaAndReturnId(connection, actualTime, name):
-    queryContactSynaPost = "INSERT INTO wp_posts (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_name, to_ping, pinged, post_modified, post_modified_gmt, post_content_filtered, guid, post_type) VALUES (%(post_author)s, %(post_date)s, %(post_date_gmt)s, %(post_content)s, %(post_title)s, %(post_excerpt)s, %(post_name)s, %(to_ping)s, %(pinged)s, %(post_modified)s, %(post_modified_gmt)s, %(post_content_filtered)s, %(guid)s, %(post_type)s)"
+def createPostWpPostAndReturnId(connection, actualTime, row):
+    queryPost = "INSERT INTO wp_posts (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_name, to_ping, pinged, post_modified, post_modified_gmt, post_content_filtered, guid, post_type) VALUES (%(post_author)s, %(post_date)s, %(post_date_gmt)s, %(post_content)s, %(post_title)s, %(post_excerpt)s, %(post_name)s, %(to_ping)s, %(pinged)s, %(post_modified)s, %(post_modified_gmt)s, %(post_content_filtered)s, %(guid)s, %(post_type)s)"
     lastId = getLastIdAddOne(connection)
     postContent = {
         "post_author": 1,
@@ -62,7 +62,7 @@ def createPostContactSynaAndReturnId(connection, actualTime, name):
         "post_type": "product",
     }
     cursor = connection.cursor(buffered=True)
-    cursor.execute(queryContactSynaPost, postContent)
+    cursor.execute(queryPost, postContent)
     connection.commit()
     return cursor.lastrowid
 
@@ -190,18 +190,18 @@ def connectDatabase():
 
         dev = {
             "host": "localhost",
-            "database": "consistoirefr",
-            "user": "wp_brrvv",
-            "password": "64nL@_X5B@1*d?H&",
+            "database": "freudlacan",
+            "user": "usrflaca",
+            "password": "0dsY%0v95",
             "port": 3306,
         }
 
         connection = mysql.connector.connect(
-            host=local["host"],
-            database=local["database"],
-            user=local["user"],
-            password=local["password"],
-            port=local["port"],
+            host=dev["host"],
+            database=dev["database"],
+            user=dev["user"],
+            password=dev["password"],
+            port=dev["port"],
         )
 
         return connection
@@ -225,7 +225,7 @@ def launchProductsAndCategoriesInsertion():
     actualTime = time.strftime("%Y-%m-%d %H:%M:%S")
     dictProductsIds = {}
     for row in dataProducts:
-        idPost = createPostContactSynaAndReturnId(connection, actualTime, row)
+        idPost = createPostWpPostAndReturnId(connection, actualTime, row)
         createPostMeta(connection, row['product_sort_price'], '_price', idPost)
         createPostMeta(connection, row['product_sort_price'], '_sale_price', idPost)
         createPostMeta(connection, row['product_code'], '_sku', idPost)
@@ -314,5 +314,5 @@ def launchGedIndexation():
     #for document in document_objects:
         #print(document.Tag)
 
-#launchProductsAndCategoriesInsertion()
-launchGedIndexation()
+launchProductsAndCategoriesInsertion()
+# launchGedIndexation()
