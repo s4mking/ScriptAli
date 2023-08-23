@@ -22,14 +22,14 @@ def findIdPostByType(connection, name, type):
 
 def findIdTermByType(connection, name):
     cursor = connection.cursor(buffered=True)
-    select = "SELECT term_id FROM wp_terms WHERE wp_terms.name = %s"
+    select = "SELECT term_id FROM usrflacaterms WHERE usrflacaterms.name = %s"
     cursor.execute(select, (name,))
     result = cursor.fetchone()
     return result[0] if result is not None else None
 
 def findIfSameMetaNameWithSamePostId(connection, postId, metaname):
     cursor = connection.cursor(buffered=True)
-    select = "SELECT meta_id FROM wp_postmeta WHERE J6e0wfWFh_postmeta.post_id = %s AND J6e0wfWFh_postmeta.meta_key = %s "
+    select = "SELECT meta_id FROM usrflacapostmeta WHERE usrflacapostmeta.post_id = %s AND usrflacapostmeta.meta_key = %s "
     cursor.execute(select, (postId, metaname))
     result = cursor.fetchone()
     return result[0] if result is not None else None
@@ -106,7 +106,7 @@ def createCatAndReturnId(connection, actualTime, cat):
 
 def findIfindRelationshipsdTermTaxonomy(connection, object_id,term_taxonomy_id):
     cursor = connection.cursor(buffered=True)
-    select = "SELECT * FROM usrflacaterm_relationships WHERE wp_term_relationships.object_id = %s AND wp_term_relationships.term_taxonomy_id = %s"
+    select = "SELECT * FROM usrflacaterm_relationships WHERE usrflacaterm_relationships.object_id = %s AND usrflacaterm_relationships.term_taxonomy_id = %s"
     cursor.execute(select, (object_id,term_taxonomy_id))
     result = cursor.fetchone()
     return result[0] if result is not None else None
