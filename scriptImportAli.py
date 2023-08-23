@@ -9,13 +9,13 @@ import time
 
 def getLastIdAddOne(connection):
     cursor = connection.cursor(buffered=True)
-    select = "SELECT id from wp_posts ORDER BY id DESC LIMIT 1"
+    select = "SELECT id from usrflacaposts ORDER BY id DESC LIMIT 1"
     cursor.execute(select)
     return cursor.fetchone()[0] + 1
 
 def findIdPostByType(connection, name, type):
     cursor = connection.cursor(buffered=True)
-    select = "SELECT id FROM wp_posts WHERE wp_posts.post_title = %s AND wp_posts.post_type = %s "
+    select = "SELECT id FROM usrflacaposts WHERE usrflacaposts.post_title = %s AND usrflacaposts.post_type = %s "
     cursor.execute(select, (name, type))
     result = cursor.fetchone()
     return result[0] if result is not None else None
@@ -92,7 +92,7 @@ def createPostType(connection, actualTime, data, postType):
     return cursor.lastrowid
 
 def createCatAndReturnId(connection, actualTime, cat):
-    queryContactSynaPost = "INSERT INTO wp_terms (name, slug, term_group) VALUES (%(name)s, %(slug)s, %(term_group)s)"
+    queryContactSynaPost = "INSERT INTO usrflacaterms (name, slug, term_group) VALUES (%(name)s, %(slug)s, %(term_group)s)"
     lastId = getLastIdAddOne(connection)
     postContent = {
         "name": cat['category_name'],
@@ -106,13 +106,13 @@ def createCatAndReturnId(connection, actualTime, cat):
 
 def findIfindRelationshipsdTermTaxonomy(connection, object_id,term_taxonomy_id):
     cursor = connection.cursor(buffered=True)
-    select = "SELECT * FROM wp_term_relationships WHERE wp_term_relationships.object_id = %s AND wp_term_relationships.term_taxonomy_id = %s"
+    select = "SELECT * FROM usrflacaterm_relationships WHERE wp_term_relationships.object_id = %s AND wp_term_relationships.term_taxonomy_id = %s"
     cursor.execute(select, (object_id,term_taxonomy_id))
     result = cursor.fetchone()
     return result[0] if result is not None else None
 
 def acreateTaxonomyAndReturnId(connection, cat):
-    queryTaxonomyPost = "INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count) VALUES (%(term_id)s, %(taxonomy)s, %(description)s, %(parent)s, %(count)s)"
+    queryTaxonomyPost = "INSERT INTO usrflacaterm_taxonomy (term_id, taxonomy, description, parent, count) VALUES (%(term_id)s, %(taxonomy)s, %(description)s, %(parent)s, %(count)s)"
     postContent = {
         "term_id": cat,
         "taxonomy": 'product_cat',
@@ -126,7 +126,7 @@ def acreateTaxonomyAndReturnId(connection, cat):
     
 
 def createTermRelationship(connection, cat, product):
-    queryTaxonomyPost = "INSERT INTO wp_term_relationships (object_id, term_taxonomy_id, term_order) VALUES (%(object_id)s, %(term_taxonomy_id)s, %(term_order)s)"
+    queryTaxonomyPost = "INSERT INTO usrflacaterm_relationships (object_id, term_taxonomy_id, term_order) VALUES (%(object_id)s, %(term_taxonomy_id)s, %(term_order)s)"
     postContent = {
         "object_id": product,
         "term_taxonomy_id": cat,
@@ -140,7 +140,7 @@ def createTermRelationship(connection, cat, product):
 
 def createPostMeta(connection, entry, meta_key, id):
     cursor = connection.cursor(buffered=True)
-    query_postmetamember = "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES (%s, %s, %s)"
+    query_postmetamember = "INSERT INTO usrflacapostmeta (post_id, meta_key, meta_value) VALUES (%s, %s, %s)"
     meta_value = entry
     cursor.execute(
         query_postmetamember,
@@ -170,7 +170,7 @@ def updatePostMetaGed(connection, entry, meta_key, id):
 
 def updatePostMeta(connection, entry, meta_key, id):
     cursor = connection.cursor(buffered=True)
-    query_postmetamember = "UPDATE wp_postmeta SET meta_value = %s  WHERE post_id = %s AND meta_key = %s"
+    query_postmetamember = "UPDATE usrflacapostmeta SET meta_value = %s  WHERE post_id = %s AND meta_key = %s"
     meta_value = entry
     cursor.execute(
         query_postmetamember,
