@@ -15,7 +15,7 @@ def getLastIdAddOne(connection):
 
 def getLastIdTranslationAddOne(connection):
     cursor = connection.cursor(buffered=True)
-    select = "SELECT trid from usrflacaicl_translations ORDER BY id DESC LIMIT 1"
+    select = "SELECT trid from usrflacaicl_translations ORDER BY trid DESC LIMIT 1"
     cursor.execute(select)
     return cursor.fetchone()[0] + 1
 
