@@ -57,7 +57,7 @@ def createPostWpPostAndReturnId(connection, actualTime, row):
         "post_modified": actualTime,
         "post_modified_gmt": actualTime,
         "post_content_filtered": "",
-        "guid": "http://ali.local/?post_type=product&#038;p="
+        "guid": "https://dev.freud-lacan.com/?post_type=product&#038;p="
         + str(lastId),
         "post_type": "product",
     }
@@ -82,7 +82,7 @@ def createPostType(connection, actualTime, data, postType):
         "post_modified": actualTime,
         "post_modified_gmt": actualTime,
         "post_content_filtered": "",
-        "guid": "http://ali.local/?post_type="+postType+"&#038;p="
+        "guid": "https://dev.freud-lacan.com/?post_type="+postType+"&#038;p="
         + str(lastId),
         "post_type": postType,
     }
