@@ -13,6 +13,12 @@ def getLastIdAddOne(connection):
     cursor.execute(select)
     return cursor.fetchone()[0] + 1
 
+def getLastIdTranslationAddOne(connection):
+    cursor = connection.cursor(buffered=True)
+    select = "SELECT trid from usrflacaicl_translations ORDER BY id DESC LIMIT 1"
+    cursor.execute(select)
+    return cursor.fetchone()[0] + 1
+
 def findIdPostByType(connection, name, type):
     cursor = connection.cursor(buffered=True)
     select = "SELECT id FROM usrflacaposts WHERE usrflacaposts.post_title = %s AND usrflacaposts.post_type = %s "
@@ -85,6 +91,20 @@ def createPostType(connection, actualTime, data, postType):
         "guid": "https://dev.freud-lacan.com/?post_type="+postType+"&#038;p="
         + str(lastId),
         "post_type": postType,
+    }
+    cursor = connection.cursor(buffered=True)
+    cursor.execute(queryContactSynaPost, postContent)
+    connection.commit()
+    return cursor.lastrowid
+
+def createPostTranslation(connection, idPost):
+    queryContactSynaPost = "INSERT INTO usrflacaicl_translations (element_type, element_id, trid, language_code) VALUES (%(post_author)s, %(post_date)s, %(post_date_gmt)s, %(post_content)s)"
+    lastId = getLastIdTranslationAddOne(connection)
+    postContent = {
+        "post_author": 'post_product',
+        "post_date": idPost,
+        "post_date_gmt": lastId,
+        "post_type": 'fr',
     }
     cursor = connection.cursor(buffered=True)
     cursor.execute(queryContactSynaPost, postContent)
@@ -226,6 +246,7 @@ def launchProductsAndCategoriesInsertion():
     dictProductsIds = {}
     for row in dataProducts:
         idPost = createPostWpPostAndReturnId(connection, actualTime, row)
+        createPostTranslation(connection, idPost)
         createPostMeta(connection, row['product_sort_price'], '_price', idPost)
         createPostMeta(connection, row['product_sort_price'], '_sale_price', idPost)
         createPostMeta(connection, row['product_code'], '_sku', idPost)
