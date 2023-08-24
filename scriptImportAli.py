@@ -98,13 +98,13 @@ def createPostType(connection, actualTime, data, postType):
     return cursor.lastrowid
 
 def createPostTranslation(connection, idPost):
-    queryContactSynaPost = "INSERT INTO usrflacaicl_translations (element_type, element_id, trid, language_code) VALUES (%(post_author)s, %(post_date)s, %(post_date_gmt)s, %(post_content)s)"
+    queryContactSynaPost = "INSERT INTO usrflacaicl_translations (element_type, element_id, trid, language_code) VALUES (%(element_type)s, %(element_id)s, %(trid)s, %(language_code)s)"
     lastId = getLastIdTranslationAddOne(connection)
     postContent = {
-        "post_author": 'post_product',
-        "post_date": idPost,
-        "post_date_gmt": lastId,
-        "post_type": 'fr',
+        "element_type": 'post_product',
+        "element_id": str(idPost),
+        "trid": str(lastId),
+        "language_code": 'fr',
     }
     cursor = connection.cursor(buffered=True)
     cursor.execute(queryContactSynaPost, postContent)
