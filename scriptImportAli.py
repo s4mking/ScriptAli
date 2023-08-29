@@ -131,6 +131,14 @@ def findIfindRelationshipsdTermTaxonomy(connection, object_id,term_taxonomy_id):
     result = cursor.fetchone()
     return result[0] if result is not None else None
 
+
+def findIfindRelationshipsdCat(connection, cat):
+    cursor = connection.cursor(buffered=True)
+    select = "SELECT * FROM usrflacaterms WHERE usrflacaterms.name = %s AND usrflacaterms.slug = %s"
+    cursor.execute(select, (cat['category_name'], cat['category_namekey']))
+    result = cursor.fetchone()
+    return result[0] if result is not None else None
+    
 def acreateTaxonomyAndReturnId(connection, cat):
     queryTaxonomyPost = "INSERT INTO usrflacaterm_taxonomy (term_id, taxonomy, description, parent, count) VALUES (%(term_id)s, %(taxonomy)s, %(description)s, %(parent)s, %(count)s)"
     postContent = {
@@ -256,9 +264,10 @@ def launchProductsAndCategoriesInsertion():
     dataCats = json.load(cats)
     dictCatsIds = {}
     for cat in dataCats:
-        idPost = createCatAndReturnId(connection, actualTime, cat)
-        idTaxonomy = acreateTaxonomyAndReturnId(connection, idPost)
-        dictCatsIds[cat['category_id']]=cat['category_name']
+        if not findIfindRelationshipsdCat(connection, cat):
+            idPost = createCatAndReturnId(connection, actualTime, cat)
+            idTaxonomy = acreateTaxonomyAndReturnId(connection, idPost)
+            dictCatsIds[cat['category_id']]=cat['category_name']
 
     catsProducts = open('hikashop_product_category.json')
     dataCatsProducts = json.load(catsProducts)
