@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import mysql.connector
 from mysql.connector import Error
 import time
+import sys
 
 
 def getLastIdAddOne(connection):
@@ -207,29 +208,31 @@ def updatePostMeta(connection, entry, meta_key, id):
     connection.commit()
 
 def connectDatabase():
-    try:
-        local = {
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+        if arg == "dev":
+            credentials = {
             "host": "127.0.0.1",
             "database": "local",
             "user": "root",
             "password": "password",
             "port": 10010,
         }
-
-        dev = {
-            "host": "localhost",
-            "database": "freudlacan",
-            "user": "usrflaca",
-            "password": "0dsY%0v95",
-            "port": 3306,
-        }
-
+        elif arg == "prod":
+            credentials = {
+                "host": "localhost",
+                "database": "freudlacan",
+                "user": "usrflaca",
+                "password": "0dsY%0v95",
+                "port": 3306,
+            }
+    try:     
         connection = mysql.connector.connect(
-            host=dev["host"],
-            database=dev["database"],
-            user=dev["user"],
-            password=dev["password"],
-            port=dev["port"],
+            host=credentials["host"],
+            database=credentials["database"],
+            user=credentials["user"],
+            password=credentials["password"],
+            port=credentials["port"],
         )
 
         return connection
@@ -313,36 +316,122 @@ def launchGedIndexation():
     tag_list = list(unique_tags)
     tag_list = [tag.strip() for tag in tag_list if tag.strip() != ""]
     tag_to_id = {}
-    for tag in tag_list:
-        id = createPostType(connection,actualTime, tag, "tag")
-        tag_to_id[tag] = id
+    # for tag in tag_list:
+    #     id = createPostType(connection,actualTime, tag, "tag")
+    #     tag_to_id[tag] = id
+    count= 0
+    count2=0
     for entry in document_objects:
-        idGedDoc = createPostType(connection,actualTime, entry.Nom, "documents-ged")
-        for attr in Document.ALL_ATTRIBUTES:
-            attribute_value = getattr(entry, attr)
-            """ print(entry.attribute_value) """
-            if (
-                findIfSameMetaGedNameWithSamePostId(
-                    connection, idGedDoc, attr
-                )
-                is None
-            ):
-                createPostMetaGed(
-                    connection,
-                    attribute_value,
-                    attr,
-                    idGedDoc,
-                )
-            else:
-                updatePostMetaGed(
-                    connection,
-                    attribute_value,
-                    attr,
-                    idGedDoc,
-                )
-    print(tag_to_id)
+        
+        if 'Index Bibliotheque' not in entry.Chemin:
+            count=count+1
+            idGedDoc = createPostType(connection,actualTime, entry.Nom, "documents-ged")
+            if entry.SousDossier == 'Dossier de préparation' or 'En transcription':
+                tag = 'Divers'
+            if entry.Dossier ==  'Billets d\'actualité':
+                tag = 'Billets d\'actualité'
+            if entry.Dossier == "Dossier préparatoire aux journées du 7-8 décembre 2019" or "Joyce et Nora : un vrai couple ?" or "Retour des journées : Où donc suis-je chez moi ? Mars 2018":
+                tag = 'Archives journées d’étude'
+            if entry.Dossier == "Le collège de l'ALI":
+                tag = 'Le collège de l\'ALI'
+            if entry.Dossier == "LES CARTELS DE L'ALI":
+                tag = 'Archives journées des cartels'
+            if entry.Dossier == "Les séminaires d'hiver":
+                tag = 'Archives séminaires d’hiver'
+            if entry.Dossier == "Préparation au séminaire d'été 2021 : L'Identification" or "Préparation au séminaire d'été 2023 : étude du séminaire XX de J. Lacan Encore":
+                tag = 'Archives séminaires d’été'
+            if entry.Dossier == "Traduction éditoriaux":
+                tag = 'Archives séminaires d’hiver'
+            if entry.Dossier == "Cartel Franco Brésilien de Psychanalyse":
+                tag = 'Cycles de conférence'
+            if entry.Dossier == "La topologie":
+                tag = 'Topologie'
+            if entry.Rubrique == "Actualités des travaux de l'ALI, Enseignements":
+                tag = ' Collège des enseignements'
+            if entry.Rubrique == "Actualités des travaux de l'ALI, Séminaire d'Été":
+                tag = ' Archives séminaires d’été'
+            if entry.Rubrique == "Billets d'actualité":
+                tag = 'Divers'
+            if entry.Dossier == "Billets d'actualité":
+                tag = 'Divers'
+            if entry.Rubrique == "Cabinet de lecture":
+                tag = 'Divers'
+            if entry.Rubrique == "Cartel franco-brésilien de la psychanalyse":
+                tag = 'Cycles de conférence'
+            if entry.Rubrique == "Controverses":
+                tag = 'Billets d’actualité'
+            if entry.Rubrique == "D'autres scènes" or "D'autres scènes, Séminaire d'Été":
+                tag = 'D\'autres scènes'
+            if entry.Rubrique == "Éditoriaux":
+                tag = 'Éditoriaux'
+            if entry.Dossier == "Traduction éditoriaux":
+                tag = 'Éditoriaux'
+            if entry.Rubrique == "Enseignements" or "ENSEIGNEMENTS 2018-2019":
+                tag = 'Collège des enseignements'
+            if entry.Rubrique == "Exercices de topologie clinique":
+                tag = 'Topologie'
+            if entry.Rubrique == "Grand Séminaire de l'ALI":
+                tag = 'Le Grand Séminaire'
+            if entry.Rubrique == "Hommage":
+                tag = 'Hommages'
+            if entry.Rubrique == " Journées d'études":
+                tag = 'Archives journées d’étude'
+            if entry.Dossier == "Séminaire d'été 2016" or "Séminaire d'été 2017":
+                tag = 'Archives séminaires d’été'
+            if entry.Rubrique == "L'histoire de l'ALI":
+                tag = 'Qui sommes-nous ?'
+            if entry.Rubrique == "Les cartels de l'ALI":
+                tag = 'Archives journées des cartels'
+            if entry.Rubrique == "Lire Freud et Lacan":
+                tag = 'Divers ?'
+            if entry.Rubrique == "Lire Freud et Lacan, Notes de lecture" or "Notes de lecture":
+                tag = 'Notes de lecture'
+            if entry.Rubrique == "Parutions":
+                tag = 'Base documentaire'
+            if entry.Rubrique == "Psychanalyse et psychiatrie":
+                tag = 'Divers'
+            if entry.Rubrique == "Séminaire d'hiver":
+                tag = 'Archives séminaires d’hiver'
+            if entry.Rubrique == "Séminaire d'Été":
+                tag = 'Archives séminaires d’été'
+            if entry.Rubrique == "Séminaire de Charles Melman":
+                tag = 'Rue des archives => séminaires'
+            if entry.Rubrique == "Une journée avec...":
+                tag = 'Archives journées d’étude'
+            if entry.Rubrique == "États généreux (2018)":
+                tag = 'Archives journées d’étude'
+            if entry.Dossier == "Les séminaires de Charles Melman":
+                tag = 'Rue des archives => séminaires'
+            
+
+            for attr in Document.ALL_ATTRIBUTES:
+                attribute_value = getattr(entry, attr)
+                """ print(entry.attribute_value) """
+                if (
+                    findIfSameMetaGedNameWithSamePostId(
+                        connection, idGedDoc, attr
+                    )
+                    is None
+                ):
+                    createPostMetaGed(
+                        connection,
+                        attribute_value,
+                        attr,
+                        idGedDoc,
+                    )
+                else:
+                    updatePostMetaGed(
+                        connection,
+                        attribute_value,
+                        attr,
+                        idGedDoc,
+                    )
+        else:
+            count2=count2+1
+    print(count)
+    print(count2)
     #for document in document_objects:
         #print(document.Tag)
 
-launchProductsAndCategoriesInsertion()
-# launchGedIndexation()
+#launchProductsAndCategoriesInsertion()
+launchGedIndexation()
