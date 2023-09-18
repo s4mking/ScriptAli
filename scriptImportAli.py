@@ -127,6 +127,16 @@ def createPostTypeAttachment(connection, actualTime, title, name, postType, mime
     connection.commit()
     return cursor.lastrowid
 
+def updatePostContentDocumentGed(connection, name, extension, id):
+    cursor = connection.cursor(buffered=True)
+    query_postmetamember = "UPDATE usrflacaposts SET post_content = %s  WHERE ID = %s"
+    meta_value = f"<a href='https://dev.freud-lacan.com/wp-content/themes/freudlacan-front/assets/content/2023/09/{name}.{extension}'>{name}</a>"
+    cursor.execute(
+        query_postmetamember,
+        (meta_value, id),
+    )
+    connection.commit()
+
 def createPostTranslation(connection, idPost):
     queryContactSynaPost = "INSERT INTO usrflacaicl_translations (element_type, element_id, trid, language_code) VALUES (%(element_type)s, %(element_id)s, %(trid)s, %(language_code)s)"
     lastId = getLastIdTranslationAddOne(connection)
@@ -480,14 +490,17 @@ def launchGedIndexation():
                             "meta_value": f"a:{len(arrayTags)}:{{{result}}}",
                         }
                         createOrUpdateMetaData(connection,idGedDoc,metaDirigeants["meta_key"],metaDirigeants["meta_value"])
-                    if not os.path.isfile('aliDocs/'+entry.Chemin.split("\\")[-1]):
+                    if not os.path.isfile('../wp-content/themes/freudlacan-front/assets/content/2023/09/aliDocs/'+entry.Chemin.split("\\")[-1]):
                         countNotFound=countNotFound+1
                         print(entry.Chemin)
                         continue
-                    mimeType = mime.from_file('aliDocs/'+entry.Chemin.split("\\")[-1])
+                    #mimeType = mime.from_file('aliDocs/'+entry.Chemin.split("\\")[-1])
+                    mimeType = mime.from_file('../wp-content/themes/freudlacan-front/assets/content/2023/09/aliDocs/'+entry.Chemin.split("\\")[-1])
                     
                     idAttachment = createPostTypeAttachment(connection, actualTime, entry.TitreDocument , str(entry.Nom), 'attachment', mimeType, idGedDoc,entry.Chemin.rsplit('.', 1)[-1])
                     createOrUpdateMetaData(connection, idAttachment, '_wp_attached_file','2023/09/'+ entry.Chemin.split("\\")[-1])
+                    updatePostContentDocumentGed(connection,str(entry.Nom) ,  entry.Chemin.rsplit('.', 1)[-1] , idGedDoc)
+                    
                # post_type = attachment
             # _wp_attached_file
 
@@ -524,13 +537,13 @@ def launchGedIndexation():
     destination_dir = "/Users/samuel/Local Sites/ali/app/public/script/aliDocsExcluded"
 
 
-    for filename in os.listdir(source_dir):
-        source_file_path = os.path.join(source_dir, filename)
-        if os.path.isfile(source_file_path) and filename not in arrayFileName:
-            destination_file_path = os.path.join(destination_dir, filename)
-            os.rename(source_file_path, destination_file_path)
-            print(f"Moved '{filename}' to '{destination_file_path}'")
-        # for document in document_objects:
+    # for filename in os.listdir(source_dir):
+    #     source_file_path = os.path.join(source_dir, filename)
+    #     if os.path.isfile(source_file_path) and filename not in arrayFileName:
+    #         destination_file_path = os.path.join(destination_dir, filename)
+    #         os.rename(source_file_path, destination_file_path)
+    #         print(f"Moved '{filename}' to '{destination_file_path}'")
+    #     # for document in document_objects:
         #     print(document.Tag)
 
 #launchProductsAndCategoriesInsertion()
