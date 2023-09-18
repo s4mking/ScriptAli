@@ -6,6 +6,9 @@ import mysql.connector
 from mysql.connector import Error
 import time
 import sys
+import os
+import csv
+import magic
 
 
 def getLastIdAddOne(connection):
@@ -81,17 +84,43 @@ def createPostType(connection, actualTime, data, postType):
         "post_date": actualTime,
         "post_date_gmt": actualTime,
         "post_content": '',
-        "post_title": data,
+        "post_title": data[:254],
         "post_excerpt": "",
         "to_ping": "",
         "pinged": "",
-        "post_name": data,
+        "post_name": data[:200],
         "post_modified": actualTime,
         "post_modified_gmt": actualTime,
         "post_content_filtered": "",
         "guid": "https://dev.freud-lacan.com/?post_type="+postType+"&#038;p="
         + str(lastId),
         "post_type": postType,
+    }
+    cursor = connection.cursor(buffered=True)
+    cursor.execute(queryContactSynaPost, postContent)
+    connection.commit()
+    return cursor.lastrowid
+
+def createPostTypeAttachment(connection, actualTime, title, name, postType, mimeType, idParent, extension):
+    queryContactSynaPost = "INSERT INTO usrflacaposts (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_name, to_ping, pinged, post_modified, post_modified_gmt, post_content_filtered, post_mime_type, guid, post_type, post_parent) VALUES (%(post_author)s, %(post_date)s, %(post_date_gmt)s, %(post_content)s, %(post_title)s, %(post_excerpt)s, %(post_name)s, %(to_ping)s, %(pinged)s, %(post_modified)s, %(post_modified_gmt)s, %(post_content_filtered)s, %(post_mime_type)s, %(guid)s, %(post_type)s, %(post_parent)s)"
+    lastId = getLastIdAddOne(connection)
+    postContent = {
+        "post_author": 1,
+        "post_date": actualTime,
+        "post_date_gmt": actualTime,
+        "post_content": '',
+        "post_title": title,
+        "post_excerpt": "",
+        "to_ping": "",
+        "pinged": "",
+        "post_name": name,
+        "post_modified": actualTime,
+        "post_modified_gmt": actualTime,
+        "post_content_filtered": "",
+        "post_mime_type": mimeType,
+        "guid": ("https://dev.freud-lacan.com/wp-content/themes/freudlacan-front/assets/content/2023/09/"+name+'.'+extension),
+        "post_type": postType,
+        "post_parent": idParent,
     }
     cursor = connection.cursor(buffered=True)
     cursor.execute(queryContactSynaPost, postContent)
@@ -300,6 +329,26 @@ class Document:
     def __init__(self, **kwargs):
         for attr in Document.ALL_ATTRIBUTES:
             setattr(self, attr, kwargs.get(attr, ""))
+def createOrUpdateMetaData(connection, idGedDoc, attribute_value, attr):
+    if (
+        findIfSameMetaGedNameWithSamePostId(
+            connection, idGedDoc, attr
+        )
+        is None
+    ):
+        createPostMetaGed(
+            connection,
+            attribute_value,
+            attr,
+            idGedDoc,
+        )
+    else:
+        updatePostMetaGed(
+            connection,
+            attribute_value,
+            attr,
+            idGedDoc,
+        )
 
 def launchGedIndexation():
     connection = connectDatabase()
@@ -321,117 +370,168 @@ def launchGedIndexation():
     #     tag_to_id[tag] = id
     count= 0
     count2=0
-    for entry in document_objects:
-        
-        if 'Index Bibliotheque' not in entry.Chemin:
-            count=count+1
-            idGedDoc = createPostType(connection,actualTime, entry.Nom, "documents-ged")
-            if entry.SousDossier == 'Dossier de préparation' or 'En transcription':
-                tag = 'Divers'
-            if entry.Dossier ==  'Billets d\'actualité':
-                tag = 'Billets d\'actualité'
-            if entry.Dossier == "Dossier préparatoire aux journées du 7-8 décembre 2019" or "Joyce et Nora : un vrai couple ?" or "Retour des journées : Où donc suis-je chez moi ? Mars 2018":
-                tag = 'Archives journées d’étude'
-            if entry.Dossier == "Le collège de l'ALI":
-                tag = 'Le collège de l\'ALI'
-            if entry.Dossier == "LES CARTELS DE L'ALI":
-                tag = 'Archives journées des cartels'
-            if entry.Dossier == "Les séminaires d'hiver":
-                tag = 'Archives séminaires d’hiver'
-            if entry.Dossier == "Préparation au séminaire d'été 2021 : L'Identification" or "Préparation au séminaire d'été 2023 : étude du séminaire XX de J. Lacan Encore":
-                tag = 'Archives séminaires d’été'
-            if entry.Dossier == "Traduction éditoriaux":
-                tag = 'Archives séminaires d’hiver'
-            if entry.Dossier == "Cartel Franco Brésilien de Psychanalyse":
-                tag = 'Cycles de conférence'
-            if entry.Dossier == "La topologie":
-                tag = 'Topologie'
-            if entry.Rubrique == "Actualités des travaux de l'ALI, Enseignements":
-                tag = ' Collège des enseignements'
-            if entry.Rubrique == "Actualités des travaux de l'ALI, Séminaire d'Été":
-                tag = ' Archives séminaires d’été'
-            if entry.Rubrique == "Billets d'actualité":
-                tag = 'Divers'
-            if entry.Dossier == "Billets d'actualité":
-                tag = 'Divers'
-            if entry.Rubrique == "Cabinet de lecture":
-                tag = 'Divers'
-            if entry.Rubrique == "Cartel franco-brésilien de la psychanalyse":
-                tag = 'Cycles de conférence'
-            if entry.Rubrique == "Controverses":
-                tag = 'Billets d’actualité'
-            if entry.Rubrique == "D'autres scènes" or "D'autres scènes, Séminaire d'Été":
-                tag = 'D\'autres scènes'
-            if entry.Rubrique == "Éditoriaux":
-                tag = 'Éditoriaux'
-            if entry.Dossier == "Traduction éditoriaux":
-                tag = 'Éditoriaux'
-            if entry.Rubrique == "Enseignements" or "ENSEIGNEMENTS 2018-2019":
-                tag = 'Collège des enseignements'
-            if entry.Rubrique == "Exercices de topologie clinique":
-                tag = 'Topologie'
-            if entry.Rubrique == "Grand Séminaire de l'ALI":
-                tag = 'Le Grand Séminaire'
-            if entry.Rubrique == "Hommage":
-                tag = 'Hommages'
-            if entry.Rubrique == " Journées d'études":
-                tag = 'Archives journées d’étude'
-            if entry.Dossier == "Séminaire d'été 2016" or "Séminaire d'été 2017":
-                tag = 'Archives séminaires d’été'
-            if entry.Rubrique == "L'histoire de l'ALI":
-                tag = 'Qui sommes-nous ?'
-            if entry.Rubrique == "Les cartels de l'ALI":
-                tag = 'Archives journées des cartels'
-            if entry.Rubrique == "Lire Freud et Lacan":
-                tag = 'Divers ?'
-            if entry.Rubrique == "Lire Freud et Lacan, Notes de lecture" or "Notes de lecture":
-                tag = 'Notes de lecture'
-            if entry.Rubrique == "Parutions":
-                tag = 'Base documentaire'
-            if entry.Rubrique == "Psychanalyse et psychiatrie":
-                tag = 'Divers'
-            if entry.Rubrique == "Séminaire d'hiver":
-                tag = 'Archives séminaires d’hiver'
-            if entry.Rubrique == "Séminaire d'Été":
-                tag = 'Archives séminaires d’été'
-            if entry.Rubrique == "Séminaire de Charles Melman":
-                tag = 'Rue des archives => séminaires'
-            if entry.Rubrique == "Une journée avec...":
-                tag = 'Archives journées d’étude'
-            if entry.Rubrique == "États généreux (2018)":
-                tag = 'Archives journées d’étude'
-            if entry.Dossier == "Les séminaires de Charles Melman":
-                tag = 'Rue des archives => séminaires'
-            
+    arrayFileName = []
+    countFile =0
+    countNotFound=0
+    with open('exportGed.csv', mode='w', encoding='utf-8', newline='') as file: 
+        writer = csv.writer(file)
+        writer.writerow(["Titre", "Tag", "Auteur", "Date", "Filename", "Dossier", "SousDossier", "Rubrique"])
+        mime = magic.Magic(mime=True)
+        for entry in document_objects:
+            if len(str(entry.Nom)) > 163:
+                countFile = countFile+1
+            else:
+                if 'Index Bibliotheque' not in entry.Chemin:
+                    fileName = entry.Chemin.split("\\")[-1]
+                    arrayFileName.append(fileName)
+                    
+                    count=count+1
+                    idGedDoc = createPostType(connection,actualTime, str(entry.TitreDocument), "documents-ged")
+                    if entry.SousDossier == 'Dossier de préparation' or entry.SousDossier == 'En transcription':
+                        tag = 'Divers'
+                    if entry.Dossier ==  'Billets d\'actualité':
+                        tag = 'Billets d\'actualité'
+                    if entry.Dossier == "Dossier préparatoire aux journées du 7-8 décembre 2019" or entry.Dossier == "Joyce et Nora : un vrai couple ?" or  entry.Dossier == "Retour des journées : Où donc suis-je chez moi ? Mars 2018":
+                        tag = 'Archives journées d’étude'
+                    if entry.Dossier == "Le collège de l'ALI":
+                        tag = 'Le collège de l\'ALI'
+                    if entry.Dossier == "LES CARTELS DE L'ALI":
+                        tag = 'Archives journées des cartels'
+                    if entry.Dossier == "Les séminaires d'hiver":
+                        tag = 'Archives séminaires d’hiver'
+                    if entry.Dossier == "Préparation au séminaire d'été 2021 : L'Identification" or  entry.Dossier == "Préparation au séminaire d'été 2023 : étude du séminaire XX de J. Lacan Encore":
+                        tag = 'Archives séminaires d’été'
+                    if entry.Dossier == "Traduction éditoriaux":
+                        tag = 'Archives séminaires d’hiver'
+                    if entry.Dossier == "Cartel Franco Brésilien de Psychanalyse":
+                        tag = 'Cycles de conférence'
+                    if entry.Dossier == "La topologie":
+                        tag = 'Topologie'
+                    if entry.Rubrique == "Actualités des travaux de l'ALI, Enseignements":
+                        tag = ' Collège des enseignements'
+                    if entry.Rubrique == "Actualités des travaux de l'ALI, Séminaire d'Été":
+                        tag = ' Archives séminaires d’été'
+                    if entry.Rubrique == "Billets d'actualité":
+                        tag = 'Divers'
+                    if entry.Dossier == "Billets d'actualité":
+                        tag = 'Divers'
+                    if entry.Rubrique == "Cabinet de lecture":
+                        tag = 'Divers'
+                    if entry.Rubrique == "Cartel franco-brésilien de la psychanalyse":
+                        tag = 'Cycles de conférence'
+                    if entry.Rubrique == "Controverses":
+                        tag = 'Billets d’actualité'
+                    if entry.Rubrique == "D'autres scènes" or entry.Rubrique == "D'autres scènes, Séminaire d'Été":
+                        tag = 'D\'autres scènes'
+                    if entry.Rubrique == "Éditoriaux":
+                        tag = 'Éditoriaux'
+                    if entry.Dossier == "Traduction éditoriaux":
+                        tag = 'Éditoriaux'
+                    if entry.Rubrique == "Enseignements" or entry.Rubrique ==  "ENSEIGNEMENTS 2018-2019":
+                        tag = 'Collège des enseignements'
+                    if entry.Rubrique == "Exercices de topologie clinique":
+                        tag = 'Topologie'
+                    if entry.Rubrique == "Grand Séminaire de l'ALI":
+                        tag = 'Le Grand Séminaire'
+                    if entry.Rubrique == "Hommage":
+                        tag = 'Hommages'
+                    if entry.Rubrique == " Journées d'études":
+                        tag = 'Archives journées d’étude'
+                    if entry.Dossier == "Séminaire d'été 2016" or entry.Dossier == "Séminaire d'été 2017":
+                        tag = 'Archives séminaires d’été'
+                    if entry.Rubrique == "L'histoire de l'ALI":
+                        tag = 'Qui sommes-nous ?'
+                    if entry.Rubrique == "Les cartels de l'ALI":
+                        tag = 'Archives journées des cartels'
+                    if entry.Rubrique == "Lire Freud et Lacan":
+                        tag = 'Divers ?'
+                    if entry.Rubrique == "Lire Freud et Lacan, Notes de lecture" or entry.Rubrique == "Notes de lecture":
+                        tag = 'Notes de lecture'
+                    if entry.Rubrique == "Parutions":
+                        tag = 'Base documentaire'
+                    if entry.Rubrique == "Psychanalyse et psychiatrie":
+                        tag = 'Divers'
+                    if entry.Rubrique == "Séminaire d'hiver":
+                        tag = 'Archives séminaires d’hiver'
+                    if entry.Rubrique == "Séminaire d'Été":
+                        tag = 'Archives séminaires d’été'
+                    if entry.Rubrique == "Séminaire de Charles Melman":
+                        tag = 'Rue des archives => séminaires'
+                    if entry.Rubrique == "Une journée avec...":
+                        tag = 'Archives journées d’étude'
+                    if entry.Rubrique == "États généreux (2018)":
+                        tag = 'Archives journées d’étude'
+                    if entry.Dossier == "Les séminaires de Charles Melman":
+                        tag = 'Rue des archives => séminaires'
+                    writer.writerow([entry.TitreDocument, tag if tag else '', entry.AuteurDocument, entry.DatePublication, entry.Chemin, entry.Dossier, entry.SousDossier, entry.Rubrique])
+                    if tag:
+                        arrayTags = []
+                        id = createPostType(connection,actualTime, tag, "tag")
+                        arrayTags.append(id)
+                        result = ";".join(
+                            [
+                                f'i:{i};s:{len(str(value))}:"{value}"'
+                                for i, value in enumerate(arrayTags)
+                            ]
+                        )
+                        result += ";"
+                        metaDirigeants = {
+                            "meta_key": "tag",
+                            "meta_value": f"a:{len(arrayTags)}:{{{result}}}",
+                        }
+                        createOrUpdateMetaData(connection,idGedDoc,metaDirigeants["meta_key"],metaDirigeants["meta_value"])
+                    if not os.path.isfile('aliDocs/'+entry.Chemin.split("\\")[-1]):
+                        countNotFound=countNotFound+1
+                        print(entry.Chemin)
+                        continue
+                    mimeType = mime.from_file('aliDocs/'+entry.Chemin.split("\\")[-1])
+                    
+                    idAttachment = createPostTypeAttachment(connection, actualTime, entry.TitreDocument , str(entry.Nom), 'attachment', mimeType, idGedDoc,entry.Chemin.rsplit('.', 1)[-1])
+                    createOrUpdateMetaData(connection, idAttachment, '_wp_attached_file','2023/09/'+ entry.Chemin.split("\\")[-1])
+               # post_type = attachment
+            # _wp_attached_file
 
             for attr in Document.ALL_ATTRIBUTES:
                 attribute_value = getattr(entry, attr)
                 """ print(entry.attribute_value) """
-                if (
-                    findIfSameMetaGedNameWithSamePostId(
-                        connection, idGedDoc, attr
-                    )
-                    is None
-                ):
-                    createPostMetaGed(
-                        connection,
-                        attribute_value,
-                        attr,
-                        idGedDoc,
-                    )
-                else:
-                    updatePostMetaGed(
-                        connection,
-                        attribute_value,
-                        attr,
-                        idGedDoc,
-                    )
-        else:
-            count2=count2+1
-    print(count)
-    print(count2)
-    #for document in document_objects:
-        #print(document.Tag)
+                createOrUpdateMetaData(connection,idGedDoc,attribute_value,attr)
+                # if (
+                #     findIfSameMetaGedNameWithSamePostId(
+                #         connection, idGedDoc, attr
+                #     )
+                #     is None
+                # ):
+                #     createPostMetaGed(
+                #         connection,
+                #         attribute_value,
+                #         attr,
+                #         idGedDoc,
+                #     )
+                # else:
+                #     updatePostMetaGed(
+                #         connection,
+                #         attribute_value,
+                #         attr,
+                #         idGedDoc,
+                #     )
+        print(countFile)
+        print(countNotFound)
+
+    # Directory path where the files are located
+    source_dir = "/Users/samuel/Local Sites/ali/app/public/script/aliDocs"  # Replace with the actual source directory path
+
+    # Destination directory path
+    destination_dir = "/Users/samuel/Local Sites/ali/app/public/script/aliDocsExcluded"
+
+
+    for filename in os.listdir(source_dir):
+        source_file_path = os.path.join(source_dir, filename)
+        if os.path.isfile(source_file_path) and filename not in arrayFileName:
+            destination_file_path = os.path.join(destination_dir, filename)
+            os.rename(source_file_path, destination_file_path)
+            print(f"Moved '{filename}' to '{destination_file_path}'")
+        # for document in document_objects:
+        #     print(document.Tag)
 
 #launchProductsAndCategoriesInsertion()
 launchGedIndexation()
