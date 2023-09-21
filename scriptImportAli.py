@@ -520,11 +520,11 @@ def launchGedIndexation():
                         attribute_value = getattr(entry, attr)
                         attr = field_value_mapping.get(attr, None)
                         createOrUpdateMetaData(connection,idGedDoc,attribute_value,attr)
-                    if not os.path.isfile('../wp-content/themes/freudlacan-front/assets/content/2023/09/aliDocs/'+entry.Chemin.split("\\")[-1]):
+                    if not os.path.isfile('../wp-content/themes/freudlacan-front/assets/content/2023/09/'+entry.Chemin.split("\\")[-1]):
                         countNotFound=countNotFound+1
                         continue
                     #mimeType = mime.from_file('aliDocs/'+entry.Chemin.split("\\")[-1])
-                    mimeType = mime.from_file('../wp-content/themes/freudlacan-front/assets/content/2023/09/aliDocs/'+entry.Chemin.split("\\")[-1])
+                    mimeType = mime.from_file('../wp-content/themes/freudlacan-front/assets/content/2023/09/'+entry.Chemin.split("\\")[-1])
                     
                     idAttachment = createPostTypeAttachment(connection, actualTime, entry.TitreDocument , str(entry.Nom), 'attachment', mimeType, idGedDoc,entry.Chemin.rsplit('.', 1)[-1])
                     createOrUpdateMetaData(connection, idAttachment, '_wp_attached_file','2023/09/'+ entry.Chemin.split("\\")[-1])
