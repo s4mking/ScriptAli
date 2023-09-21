@@ -384,14 +384,10 @@ def launchGedIndexation():
     tag_list = list(unique_tags)
     tag_list = [tag.strip() for tag in tag_list if tag.strip() != ""]
     tag_to_id = {}
-    # for tag in tag_list:
-    #     id = createPostType(connection,actualTime, tag, "tag")
-    #     tag_to_id[tag] = id
-    count= 0
-    count2=0
     arrayFileName = []
     countFile =0
     countNotFound=0
+    #permet de frounir un fichier complet au client avec l'export des tags/gilename/dossier/rubrique/etc...
     with open('exportGed.csv', mode='w', encoding='utf-8', newline='') as file: 
         writer = csv.writer(file)
         writer.writerow(["Titre", "Tag", "Auteur", "Date", "Filename", "Dossier", "SousDossier", "Rubrique"])
@@ -420,9 +416,9 @@ def launchGedIndexation():
                 if 'Index Bibliotheque' not in entry.Chemin:
                     fileName = entry.Chemin.split("\\")[-1]
                     arrayFileName.append(fileName)
-                    
                     count=count+1
                     idGedDoc = createPostType(connection,actualTime, str(entry.TitreDocument), "documents-ged")
+                    #Tag confirmé avec le client
                     if entry.SousDossier == 'Dossier de préparation' or entry.SousDossier == 'En transcription':
                         tag = 'Divers'
                     if entry.Dossier ==  'Billets d\'actualité':
@@ -520,6 +516,7 @@ def launchGedIndexation():
                         attribute_value = getattr(entry, attr)
                         attr = field_value_mapping.get(attr, None)
                         createOrUpdateMetaData(connection,idGedDoc,attribute_value,attr)
+                    #Les fichiers de la GED doivent être mis dans le dossier : ../wp-content/themes/freudlacan-front/assets/content/2023/09/
                     if not os.path.isfile('../wp-content/themes/freudlacan-front/assets/content/2023/09/'+entry.Chemin.split("\\")[-1]):
                         countNotFound=countNotFound+1
                         continue
@@ -529,31 +526,6 @@ def launchGedIndexation():
                     idAttachment = createPostTypeAttachment(connection, actualTime, entry.TitreDocument , str(entry.Nom), 'attachment', mimeType, idGedDoc,entry.Chemin.rsplit('.', 1)[-1])
                     createOrUpdateMetaData(connection, idAttachment, '_wp_attached_file','2023/09/'+ entry.Chemin.split("\\")[-1])
                     updatePostContentDocumentGed(connection,str(entry.Nom) ,  entry.Chemin.rsplit('.', 1)[-1] , idGedDoc)
-                    
-                    
-
-                   
-                    # if (
-                    #     findIfSameMetaGedNameWithSamePostId(
-                    #         connection, idGedDoc, attr
-                    #     )
-                    #     is None
-                    # ):
-                    #     createPostMetaGed(
-                    #         connection,
-                    #         attribute_value,
-                    #         attr,
-                    #         idGedDoc,
-                    #     )
-                    # else:
-                    #     updatePostMetaGed(
-                    #         connection,
-                    #         attribute_value,
-                    #         attr,
-                    #         idGedDoc,
-                    #     )
-        print(countFile)
-        print(countNotFound)
 
     # Directory path where the files are located
     source_dir = "/Users/samuel/Local Sites/ali/app/public/script/aliDocs"  # Replace with the actual source directory path
@@ -571,5 +543,6 @@ def launchGedIndexation():
     #     # for document in document_objects:
         #     print(document.Tag)
 
+#En commentaires pour l'instant vu que les images ont été rajouté à la main
 #launchProductsAndCategoriesInsertion()
 launchGedIndexation()
