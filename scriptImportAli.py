@@ -51,6 +51,14 @@ def findIfSameMetaGedNameWithSamePostId(connection, postId, metaname):
     result = cursor.fetchone()
     return result[0] if result is not None else None
 
+
+def findSameTag(connection, name):
+    cursor = connection.cursor(buffered=True)
+    select = "SELECT ID FROM usrflacaposts WHERE usrflacaposts.post_title = %s "
+    cursor.execute(select, ([name]))
+    result = cursor.fetchone()
+    return result[0] if result is not None else None
+    
 def createPostWpPostAndReturnId(connection, actualTime, row):
     queryPost = "INSERT INTO usrflacaposts (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_name, to_ping, pinged, post_modified, post_modified_gmt, post_content_filtered, guid, post_type) VALUES (%(post_author)s, %(post_date)s, %(post_date_gmt)s, %(post_content)s, %(post_title)s, %(post_excerpt)s, %(post_name)s, %(to_ping)s, %(pinged)s, %(post_modified)s, %(post_modified_gmt)s, %(post_content_filtered)s, %(guid)s, %(post_type)s)"
     lastId = getLastIdAddOne(connection)
@@ -339,6 +347,7 @@ class Document:
     def __init__(self, **kwargs):
         for attr in Document.ALL_ATTRIBUTES:
             setattr(self, attr, kwargs.get(attr, ""))
+
 def createOrUpdateMetaData(connection, idGedDoc, attribute_value, attr):
     if (
         findIfSameMetaGedNameWithSamePostId(
@@ -387,6 +396,23 @@ def launchGedIndexation():
         writer = csv.writer(file)
         writer.writerow(["Titre", "Tag", "Auteur", "Date", "Filename", "Dossier", "SousDossier", "Rubrique"])
         mime = magic.Magic(mime=True)
+        fields = [
+                "Nom", "Extension", "Chemin", "DateCreated", "DateModified",
+                "numorder", "hitcount", "TitreDocument", "SousTitre", "AuteurDocument",
+                "Rubrique", "Dossier", "SousDossier", "Tag", "Ouvrage", "Annee", "Pages",
+                "Editeur", "Ville", "Resume", "Introduction", "DatePublication",
+                "EtatDocument", "interDBZEDOC", "Origine", "AncienIdentifiant",
+                "MediaIntroduction", "ReserveMembre", "Vedette", "secure", "zedate"
+                 ]
+        values = [
+        "titre", "Extension", "Chemin", "DateCreated", "DateModified",
+        "numorder", "hitcount", "TitreDocument", "SousTitre", "auteur",
+        "rubrique", "dossier", "SousDossier", "Tag", "ouvrage", "annee", "Pages",
+        "editeur", "Ville", "resume", "introduction", "date-de-publication",
+        "etat-document", "interDBZEDOC", "Origine", "AncienIdentifiant",
+        "media-introduction", "acces-reserve-au-membres", "mise-en-avant", "secure", "zedate"
+        ]
+        field_value_mapping = dict(zip(fields, values))
         for entry in document_objects:
             if len(str(entry.Nom)) > 163:
                 countFile = countFile+1
@@ -476,7 +502,7 @@ def launchGedIndexation():
                     writer.writerow([entry.TitreDocument, tag if tag else '', entry.AuteurDocument, entry.DatePublication, entry.Chemin, entry.Dossier, entry.SousDossier, entry.Rubrique])
                     if tag:
                         arrayTags = []
-                        id = createPostType(connection,actualTime, tag, "tag")
+                        id = findSameTag(connection, tag) if findSameTag(connection, tag) is not None else createPostType(connection, actualTime, tag, "tag")
                         arrayTags.append(id)
                         result = ";".join(
                             [
@@ -489,10 +515,13 @@ def launchGedIndexation():
                             "meta_key": "tag",
                             "meta_value": f"a:{len(arrayTags)}:{{{result}}}",
                         }
-                        createOrUpdateMetaData(connection,idGedDoc,metaDirigeants["meta_key"],metaDirigeants["meta_value"])
+                        createOrUpdateMetaData(connection,idGedDoc,metaDirigeants["meta_value"],metaDirigeants["meta_key"])
+                    for attr in Document.ALL_ATTRIBUTES:
+                        attribute_value = getattr(entry, attr)
+                        attr = field_value_mapping.get(attr, None)
+                        createOrUpdateMetaData(connection,idGedDoc,attribute_value,attr)
                     if not os.path.isfile('../wp-content/themes/freudlacan-front/assets/content/2023/09/aliDocs/'+entry.Chemin.split("\\")[-1]):
                         countNotFound=countNotFound+1
-                        print(entry.Chemin)
                         continue
                     #mimeType = mime.from_file('aliDocs/'+entry.Chemin.split("\\")[-1])
                     mimeType = mime.from_file('../wp-content/themes/freudlacan-front/assets/content/2023/09/aliDocs/'+entry.Chemin.split("\\")[-1])
@@ -501,32 +530,28 @@ def launchGedIndexation():
                     createOrUpdateMetaData(connection, idAttachment, '_wp_attached_file','2023/09/'+ entry.Chemin.split("\\")[-1])
                     updatePostContentDocumentGed(connection,str(entry.Nom) ,  entry.Chemin.rsplit('.', 1)[-1] , idGedDoc)
                     
-               # post_type = attachment
-            # _wp_attached_file
+                    
 
-            for attr in Document.ALL_ATTRIBUTES:
-                attribute_value = getattr(entry, attr)
-                """ print(entry.attribute_value) """
-                createOrUpdateMetaData(connection,idGedDoc,attribute_value,attr)
-                # if (
-                #     findIfSameMetaGedNameWithSamePostId(
-                #         connection, idGedDoc, attr
-                #     )
-                #     is None
-                # ):
-                #     createPostMetaGed(
-                #         connection,
-                #         attribute_value,
-                #         attr,
-                #         idGedDoc,
-                #     )
-                # else:
-                #     updatePostMetaGed(
-                #         connection,
-                #         attribute_value,
-                #         attr,
-                #         idGedDoc,
-                #     )
+                   
+                    # if (
+                    #     findIfSameMetaGedNameWithSamePostId(
+                    #         connection, idGedDoc, attr
+                    #     )
+                    #     is None
+                    # ):
+                    #     createPostMetaGed(
+                    #         connection,
+                    #         attribute_value,
+                    #         attr,
+                    #         idGedDoc,
+                    #     )
+                    # else:
+                    #     updatePostMetaGed(
+                    #         connection,
+                    #         attribute_value,
+                    #         attr,
+                    #         idGedDoc,
+                    #     )
         print(countFile)
         print(countNotFound)
 
